@@ -106,10 +106,10 @@ function parseRateLine(line) {
     let cols = line.split(",");
 
     return {
-        driverID: cols[0],
-        dayOff: cols[1],
-        basePay: parseInt(cols[2]),
-        tier: parseInt(cols[3])
+        driverID: cols[0].trim(),
+        dayOff: cols[1].trim(),
+        basePay: parseInt(cols[2].trim()),
+        tier: parseInt(cols[3].trim())
     };
 }
 
@@ -363,7 +363,43 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
 // Returns: integer (net pay)
 // ============================================================
 function getNetPay(driverID, actualHours, requiredHours, rateFile) {
-    // TODO: Implement this function
+
+    let lines = readFileLines(rateFile);
+
+    let basePay = null;
+    let tier = null;
+
+    for (let line of lines) {
+
+        let rate = parseRateLine(line);
+
+        if (rate.driverID === driverID) {
+            basePay = rate.basePay;
+            tier = rate.tier;
+            break;
+        }
+    }
+
+    if (basePay === null) return null;
+
+    let actual = parseDuration(actualHours);
+    let required = parseDuration(requiredHours);
+
+    if (actual >= required) return basePay;
+
+    let missingHours = Math.floor((required - actual) / 3600);
+
+    let allowance = TIER_ALLOWANCE_HOURS[tier];
+
+    if (missingHours <= allowance) return basePay;
+
+    let billable = missingHours - allowance;
+
+    let deductionRate = Math.floor(basePay / 185);
+
+    let deduction = billable * deductionRate;
+
+    return basePay - deduction;
 }
 
 module.exports = {
