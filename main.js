@@ -1,6 +1,119 @@
 const fs = require("fs");
 
 // ============================================================
+// Business Policy Constants
+// ============================================================
+const DELIVERY_START_SECONDS = 8 * 3600;
+const DELIVERY_END_SECONDS = 22 * 3600;
+
+const NORMAL_QUOTA_SECONDS = 8 * 3600 + 24 * 60;
+const EID_QUOTA_SECONDS = 6 * 3600;
+
+const TIER_ALLOWANCE_HOURS = {
+    1: 50,
+    2: 20,
+    3: 10,
+    4: 3
+};
+// ============================================================
+// Time Utility Helpers
+// ============================================================
+function parseTime12(timeStr) {
+
+    let [time, period] = timeStr.split(" ");
+    let [h, m, s] = time.split(":").map(Number);
+
+    if (period === "pm" && h !== 12) h += 12;
+    if (period === "am" && h === 12) h = 0;
+
+    return h * 3600 + m * 60 + s;
+}
+function parseDuration(timeStr) {
+
+    let [h, m, s] = timeStr.split(":").map(Number);
+
+    return h * 3600 + m * 60 + s;
+}
+function formatDuration(seconds) {
+
+    let h = Math.floor(seconds / 3600);
+    let m = Math.floor((seconds % 3600) / 60);
+    let s = seconds % 60;
+
+    return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+// ============================================================
+// Domain Logic Helpers
+// ============================================================
+function getMonth(date) {
+
+    return parseInt(date.split("-")[1]);
+}
+
+function isEid(date) {
+
+    return date >= "2025-04-10" && date <= "2025-04-30";
+}
+
+function getQuotaSeconds(date) {
+
+    return isEid(date) ? EID_QUOTA_SECONDS : NORMAL_QUOTA_SECONDS;
+}
+// ============================================================
+// File Helpers
+// ============================================================
+function readFileLines(filePath) {
+
+    return fs.readFileSync(filePath, "utf8").trim().split("\n");
+}
+
+function parseShiftLine(line) {
+
+    let cols = line.split(",");
+
+    return {
+        driverID: cols[0],
+        driverName: cols[1],
+        date: cols[2],
+        startTime: cols[3],
+        endTime: cols[4],
+        shiftDuration: cols[5],
+        idleTime: cols[6],
+        activeTime: cols[7],
+        metQuota: cols[8] === "true",
+        hasBonus: cols[9] === "true"
+    };
+}
+
+function shiftObjectToLine(shiftObj) {
+
+    return [
+        shiftObj.driverID,
+        shiftObj.driverName,
+        shiftObj.date,
+        shiftObj.startTime,
+        shiftObj.endTime,
+        shiftObj.shiftDuration,
+        shiftObj.idleTime,
+        shiftObj.activeTime,
+        String(shiftObj.metQuota),
+        String(shiftObj.hasBonus)
+    ].join(",");
+}
+
+function parseRateLine(line) {
+
+    let cols = line.split(",");
+
+    return {
+        driverID: cols[0],
+        dayOff: cols[1],
+        basePay: parseInt(cols[2]),
+        tier: parseInt(cols[3])
+    };
+}
+
+// ============================================================
 // Function 1: getShiftDuration(startTime, endTime)
 // startTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
 // endTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
