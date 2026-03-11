@@ -120,7 +120,11 @@ function parseRateLine(line) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Implement this function
+    const startSeconds = parseTime12(startTime);
+    const endSeconds = parseTime12(endTime);
+    let durationSeconds = endSeconds - startSeconds;
+    if (durationSeconds < 0) durationSeconds += 86400;
+    return formatDuration(durationSeconds);
 }
 
 // ============================================================
@@ -130,7 +134,21 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+
+    let startSeconds = parseTime12(startTime);
+    let endSeconds = parseTime12(endTime);
+
+    let idleSeconds = 0;
+
+    if (startSeconds < DELIVERY_START_SECONDS) {
+        idleSeconds += DELIVERY_START_SECONDS - startSeconds;
+    }
+
+    if (endSeconds > DELIVERY_END_SECONDS) {
+        idleSeconds += endSeconds - DELIVERY_END_SECONDS;
+    }
+
+    return formatDuration(idleSeconds);
 }
 
 // ============================================================
@@ -140,7 +158,13 @@ function getIdleTime(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getActiveTime(shiftDuration, idleTime) {
-    // TODO: Implement this function
+
+    let shiftSeconds = parseDuration(shiftDuration);
+    let idleSeconds = parseDuration(idleTime);
+
+    let activeSeconds = shiftSeconds - idleSeconds;
+
+    return formatDuration(activeSeconds);
 }
 
 // ============================================================
@@ -150,7 +174,12 @@ function getActiveTime(shiftDuration, idleTime) {
 // Returns: boolean
 // ============================================================
 function metQuota(date, activeTime) {
-    // TODO: Implement this function
+
+    let activeSeconds = parseDuration(activeTime);
+
+    let quotaSeconds = getQuotaSeconds(date);
+
+    return activeSeconds >= quotaSeconds;
 }
 
 // ============================================================
