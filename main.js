@@ -138,14 +138,20 @@ function getIdleTime(startTime, endTime) {
     let startSeconds = parseTime12(startTime);
     let endSeconds = parseTime12(endTime);
 
-    let idleSeconds = 0;
-
-    if (startSeconds < DELIVERY_START_SECONDS) {
-        idleSeconds += DELIVERY_START_SECONDS - startSeconds;
+    if (endSeconds < startSeconds) {
+        endSeconds += 86400;
     }
 
+    let idleSeconds = 0;
+
+    // Idle before delivery window
+    if (startSeconds < DELIVERY_START_SECONDS) {
+        idleSeconds += Math.min(endSeconds, DELIVERY_START_SECONDS) - startSeconds;
+    }
+
+    // Idle after delivery window
     if (endSeconds > DELIVERY_END_SECONDS) {
-        idleSeconds += endSeconds - DELIVERY_END_SECONDS;
+        idleSeconds += endSeconds - Math.max(startSeconds, DELIVERY_END_SECONDS);
     }
 
     return formatDuration(idleSeconds);
